@@ -1,7 +1,13 @@
 from typing import *
 
 
-class Stack:
+class InstantBar(type):
+
+    def __or__(klass, x: Any) -> Type:
+        return klass([x])
+
+
+class Stack(metaclass=InstantBar):
 
     def __init__(self, elements: Sequence[Any] = []) -> None:
         self._elements = [x for x in elements]
@@ -52,3 +58,6 @@ class Stack:
         if self._elements:
             return self._elements.pop(0)
         raise IndexError("Stack is empty")
+
+    def __or__(self, x: Any) -> "Stack":
+        return Stack([x, *self._elements])
