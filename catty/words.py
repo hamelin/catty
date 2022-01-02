@@ -1,7 +1,8 @@
+import copy
 import inspect as ins
 from typing import *  # noqa
 
-from catty import internal, State, no_check, is_quote, of_type
+from catty import internal, State, no_check, is_quote, of_type, is_iterable
 
 
 @internal
@@ -66,6 +67,7 @@ def dupN(state: State) -> None:
 
 dup = Word(1, dupN)
 dup2 = Word(2, dupN)
+dup3 = Word(3, dupN)
 
 
 @internal
@@ -81,6 +83,79 @@ def over(state: State) -> None:
 
 
 @internal
+def under(state: State) -> None:
+    x, y = state.consume_any_n(2)
+    state.feed(x, x, y)
+
+
+@internal
+def nip(state: State) -> None:
+    x, y = state.consume_any_n(2)
+    state.feed(y)
+
+
+@internal
 def tuck(state: State) -> None:
     x, y, z = state.consume_any_n(3)
     state.feed(z, x, y)
+
+
+@internal
+def slide(state: State) -> None:
+    z, x, y = state.consume_any_n(3)
+    state.feed(x, y, z)
+
+
+@internal
+def snip(state: State) -> None:
+    _, x, y = state.consume_any_n(3)
+    state.feed(x, y)
+
+
+@internal
+def dropN(state: State) -> None:
+    n, = state.consume(of_type(int))
+    state.consume_any_n(n)
+
+
+drop = Word(1, dropN)
+drop2 = Word(2, dropN)
+drop3 = Word(3, dropN)
+
+
+@internal
+def hide(state: State) -> None:
+    x, = state.consume_any_n(1)
+    state.data.insert(0, x)
+
+
+@internal
+def reveal(state: State) -> None:
+    if not state.data:
+        raise IndexError("At least one element must be on the stack")
+    x = state.data.pop(0)
+    state.feed(x)
+
+
+@internal
+def depth(state: State) -> None:
+    state.feed(len(state.data))
+
+
+@internal
+def copy_stack(state: State) -> None:
+    state.feed(copy.copy(state.data))
+
+
+@internal
+def set_stack(state: State) -> None:
+    stack_new, = state.consume(is_iterable)
+    state.data = list(stack_new)
+
+
+def not_implemented():
+    raise NotImplementedError()
+
+
+save = Word(copy_stack, hide)
+restore = Word(reveal, set_stack)

@@ -33,6 +33,7 @@ def with_attr(*attrs: str) -> ParamCheck:
 
 
 is_quote = with_attr("__iter__", "__len__")
+is_iterable = with_attr("__iter__")
 
 
 def of_type(T: Type) -> ParamCheck:
