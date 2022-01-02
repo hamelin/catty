@@ -1,16 +1,16 @@
 import inspect as ins
 from typing import *  # noqa
 
-from catty import introspection, State, no_check, is_quote, of_type
+from catty import internal, State, no_check, is_quote, of_type
 
 
-@introspection
+@internal
 def unquote(state: State) -> None:
     quote, = state.consume(is_quote)
     state.push(quote)
 
 
-class Word(introspection):
+class Word(internal):
 
     def __init__(self, *quote: Any) -> None:
         def _apply(state: State) -> None:
@@ -26,13 +26,13 @@ class _apply(type):
             frame = frame.f_back
         if frame is None:
             raise RuntimeError(
-                f"Cannot find the closest module context in where word {name} could "
+                f"Cannot find the closest module context where word {name} could "
                 "be defined"
             )
         return klass(name, frame.f_globals)
 
 
-class apply(introspection, metaclass=_apply):
+class apply(internal, metaclass=_apply):
 
     def __init__(self, name: str, env: Mapping[str, Any]) -> None:
         assert name
@@ -51,13 +51,13 @@ class apply(introspection, metaclass=_apply):
         return str(self)
 
 
-@introspection
+@internal
 def fork(state: State) -> None:
     condition, consequence, alternative = state.consume(no_check, is_quote, is_quote)
     state.push(consequence if condition else alternative)
 
 
-@introspection
+@internal
 def dupN(state: State) -> None:
     n, = state.consume(of_type(int))
     terms = state.consume_any_n(n)
@@ -68,19 +68,19 @@ dup = Word(1, dupN)
 dup2 = Word(2, dupN)
 
 
-@introspection
+@internal
 def swap(state: State) -> None:
     x, y = state.consume_any_n(2)
     state.feed(y, x)
 
 
-@introspection
+@internal
 def over(state: State) -> None:
     x, y = state.consume_any_n(2)
     state.feed(x, y, x)
 
 
-@introspection
+@internal
 def tuck(state: State) -> None:
     x, y, z = state.consume_any_n(3)
     state.feed(z, x, y)

@@ -1,7 +1,7 @@
 from operator import add, eq, sub
 from typing import *  # noqa
 
-from catty import reduce, introspection, State, no_check
+from catty import reduce, internal, State, no_check
 from catty.words import fork, Word, apply
 
 
@@ -17,7 +17,7 @@ def test_word_calls_word():
     assert reduce([h]) == [3, 3, 0, 3, 2, 1]
 
 
-@introspection
+@internal
 def dup(state: State) -> None:
     x, = state.consume(no_check)
     state.feed(x, x)

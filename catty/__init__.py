@@ -87,7 +87,7 @@ class State:
 
 
 @dataclass
-class introspection:
+class internal:
     apply: Callable[[State], None]
 
     def __str__(self) -> str:
@@ -106,8 +106,8 @@ def reduce(quote: Quote) -> Sequence:
     while state.execution:
         term = state.next_term()
 
-        if isinstance(term, introspection):
-            cast(introspection, term).apply(state)
+        if isinstance(term, internal):
+            cast(internal, term).apply(state)
         elif hasattr(term, "__call__"):
             sig = ins.signature(term)
             num_args = len([
