@@ -1,4 +1,4 @@
-from catty.words import callN, callargs, callstar, call, St
+from catty.words import callN, callargs, callstar, call, St, top, peer, alt
 from . import check_reduce, check_error
 
 
@@ -54,11 +54,11 @@ def test_call_happy():
             3,
             123,
             456,
-            call(plonk, St[4], St + 3, St.post, a=St.next, b=St.top)
+            call(plonk, St[4], St[3], alt, a=peer, b=top)
         ],
         [23, ([1, 2, 3], {"a": 123, "b": 456})]
     )
 
 
 def test_call_missing_ref():
-    check_error([0, 1, call(plonk, St.post)], IndexError)
+    check_error([0, 1, call(plonk, alt)], IndexError)

@@ -10,8 +10,8 @@ from catty import (
     of_type,
     is_iterable,
     is_mapping,
-    Extractor,
-    resolve_references_stack
+    Reference,
+    resolve_references
 )
 
 
@@ -23,26 +23,14 @@ def unquote(state: State) -> None:
 
 class _St:
 
-    def __getitem__(self, index: int) -> Extractor:
-        return Extractor(index)
-
-    def __add__(self, index: int) -> Extractor:
-        return self[index]
-
-    @property
-    def top(self) -> Extractor:
-        return self[0]
-
-    @property
-    def next(self) -> Extractor:
-        return self[1]
-
-    @property
-    def post(self) -> Extractor:
-        return self[2]
+    def __getitem__(klass, index: int) -> Reference:
+        return Reference(index)
 
 
 St = _St()
+top = St[0]
+peer = St[1]
+alt = St[2]
 
 
 class Word(internal):
@@ -235,7 +223,7 @@ def callstar(f: Callable) -> internal:
 
 def call(f: Callable, *args, **kwargs) -> internal:
     def fnc_resolve(state: State) -> Any:
-        args_, kwargs_ = resolve_references_stack((args, kwargs), state)
+        args_, kwargs_ = resolve_references((args, kwargs), state)
         return f(*args_, **kwargs_)
 
     return _caller("call", fnc_resolve)

@@ -109,11 +109,11 @@ class internal:
 
 
 @dataclass
-class Extractor:
+class Reference:
     index: int
 
 
-def resolve_references_stack(c: Any, state: State) -> Any:
+def resolve_references(c: Any, state: State) -> Any:
     depth = 0
 
     def resolve(x: Any) -> Any:
@@ -124,7 +124,7 @@ def resolve_references_stack(c: Any, state: State) -> Any:
             return {resolve(e) for e in x}
         elif isinstance(x, dict):
             return {k: resolve(v) for k, v in x.items()}
-        elif isinstance(x, Extractor):
+        elif isinstance(x, Reference):
             i = x.index + 1
             depth = max(depth, i)
             return state.data[-i]
@@ -170,7 +170,7 @@ def reduce(quote: Quote) -> Sequence:
             if result is not None:
                 state.feed(result)
         else:
-            resolved = resolve_references_stack(term, state)
+            resolved = resolve_references(term, state)
             state.feed(resolved)
 
     return state.data
