@@ -11,7 +11,8 @@ def check_reduce(
     klasses_warning: Sequence[Type[Warning]] = []
 ) -> None:
     with W.catch_warnings(record=True) as warnings:
-        assert reduce(quote) == expected
+        obtained = reduce(quote)
+        assert obtained == expected
 
         for kw_expected in klasses_warning:
             try:

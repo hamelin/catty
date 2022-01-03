@@ -108,9 +108,57 @@ class internal:
         return str(self)
 
 
+class SubReference(Protocol):
+
+    def resolve(self, x: Any) -> Any:
+        ...
+
+
+@dataclass
+class Attr:
+    name: str
+
+    def resolve(self, x: Any) -> Any:
+        return getattr(x, self.name)
+
+
+@dataclass
+class Item:
+    key: Any
+
+    def resolve(self, x: Any) -> Any:
+        return x[self.key]
+
+
 @dataclass
 class Reference:
-    index: int
+    key: Union[int, slice]
+    subrefs: List[SubReference]
+
+    def __getattr__(self, name: str) -> "Reference":
+        return Reference(self.key, self.subrefs + [Attr(name)])
+
+    def __getitem__(self, key: Any) -> "Reference":
+        return Reference(self.key, self.subrefs + [Item(key)])
+
+    def resolve(self, stack: Data) -> Tuple[Any, int]:
+        x: Any
+        if isinstance(self.key, int):
+            depth = self.key + 1
+            x = stack[-self.key - 1]
+        elif isinstance(self.key, slice):
+            start = self.key.start or 0
+            stop = self.key.stop
+            assert stop is not None
+            step = self.key.step or 1
+            x = stack[-stop - start + (step if start else 0)::step]
+            depth = self.key.stop
+        else:
+            raise RuntimeError(f"Reference key should be int or slice: got {self.key}")
+
+        for subref in self.subrefs:
+            x = subref.resolve(x)
+        return x, depth
 
 
 def resolve_references(c: Any, state: State) -> Any:
@@ -125,9 +173,9 @@ def resolve_references(c: Any, state: State) -> Any:
         elif isinstance(x, dict):
             return {k: resolve(v) for k, v in x.items()}
         elif isinstance(x, Reference):
-            i = x.index + 1
-            depth = max(depth, i)
-            return state.data[-i]
+            result, d = x.resolve(state.data)
+            depth = max(depth, d)
+            return result
         else:
             return x
 

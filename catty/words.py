@@ -24,7 +24,7 @@ def unquote(state: State) -> None:
 class _St:
 
     def __getitem__(klass, index: int) -> Reference:
-        return Reference(index)
+        return Reference(index, [])
 
 
 St = _St()
