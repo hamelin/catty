@@ -7,6 +7,7 @@ import warnings as W
 Term = Any
 Quote = Sequence[Term]
 Data = List
+TYPE = TypeVar("TYPE")
 
 
 @dataclass
@@ -34,6 +35,7 @@ def with_attr(*attrs: str) -> ParamCheck:
 
 is_quote = with_attr("__iter__", "__len__")
 is_iterable = with_attr("__iter__")
+is_mapping = with_attr("__iter__", "__len__", "items")
 
 
 def of_type(T: Type) -> ParamCheck:
@@ -91,11 +93,48 @@ class State:
 class internal:
     apply: Callable[[State], None]
 
+    @property
+    def __name__(self) -> str:
+        return self.apply.__name__
+
+    @__name__.setter
+    def __name__(self, name_new: str) -> None:
+        self.apply.__name__ = name_new
+
     def __str__(self) -> str:
         return self.apply.__name__
 
     def __repr__(self) -> str:
         return str(self)
+
+
+@dataclass
+class Extractor:
+    index: int
+
+
+def resolve_references_stack(c: Any, state: State) -> Any:
+    depth = 0
+
+    def resolve(x: Any) -> Any:
+        nonlocal depth
+        if isinstance(x, (list, tuple)):
+            return type(x)(resolve(e) for e in x)
+        elif isinstance(x, set):
+            return {resolve(e) for e in x}
+        elif isinstance(x, dict):
+            return {k: resolve(v) for k, v in x.items()}
+        elif isinstance(x, Extractor):
+            i = x.index + 1
+            depth = max(depth, i)
+            return state.data[-i]
+        else:
+            return x
+
+    resolved = resolve(c)
+    if depth > 0:
+        state.consume_any_n(depth)
+    return resolved
 
 
 def reduce(quote: Quote) -> Sequence:

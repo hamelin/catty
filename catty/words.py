@@ -2,7 +2,17 @@ import copy
 import inspect as ins
 from typing import *  # noqa
 
-from catty import internal, State, no_check, is_quote, of_type, is_iterable
+from catty import (
+    internal,
+    State,
+    no_check,
+    is_quote,
+    of_type,
+    is_iterable,
+    is_mapping,
+    Extractor,
+    resolve_references_stack
+)
 
 
 @internal
@@ -159,3 +169,73 @@ def not_implemented():
 
 save = Word(copy_stack, hide)
 restore = Word(reveal, set_stack)
+
+
+FetchAndCall = Callable[[State], Any]
+
+
+def _caller(name: str, fetch_and_call: FetchAndCall) -> internal:
+    @internal
+    def _call(state: State) -> None:
+        result = fetch_and_call(state)
+        if result is not None:
+            state.feed(result)
+
+    _call.__name__ = name
+    return _call
+
+
+def callN(f: Callable, n: int) -> internal:
+    def fnc_N(state: State) -> Any:
+        args = state.consume_any_n(n)
+        return f(*args)
+
+    return _caller("callN", fnc_N)
+
+
+def callargs(f: Callable) -> internal:
+    def fnc_args(state: State) -> None:
+        args, = state.consume(is_iterable)
+        return f(*args)
+
+    return _caller("callargs", fnc_args)
+
+
+def callstar(f: Callable) -> internal:
+    def fnc_star(state: State) -> None:
+        args, kwargs = state.consume(is_iterable, is_mapping)
+        return f(*args, **kwargs)
+
+    return _caller("callstar", fnc_star)
+
+
+class _St:
+
+    def __getitem__(self, index: int) -> Extractor:
+        return Extractor(index)
+
+    def __add__(self, index: int) -> Extractor:
+        return self[index]
+
+    @property
+    def top(self) -> Extractor:
+        return self[0]
+
+    @property
+    def next(self) -> Extractor:
+        return self[1]
+
+    @property
+    def post(self) -> Extractor:
+        return self[2]
+
+
+St = _St()
+
+
+def call(f: Callable, *args, **kwargs) -> internal:
+    def fnc_resolve(state: State) -> Any:
+        args_, kwargs_ = resolve_references_stack((args, kwargs), state)
+        return f(*args_, **kwargs_)
+
+    return _caller("call", fnc_resolve)
