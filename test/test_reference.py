@@ -32,3 +32,10 @@ def test_resolve_equiv_literals():
         [23, 1, 2, 3, [St[0], top, St[1], peer, St[2], alt]],
         [23, [3, 3, 2, 2, 1, 1]]
     )
+
+
+def test_bare():
+    check_reduce(
+        [23, 1, 2, 3, St[2]],
+        [23, 1]
+    )

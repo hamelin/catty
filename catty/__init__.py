@@ -144,7 +144,8 @@ def reduce(quote: Quote) -> Sequence:
     state = State(data=[], execution=[Reduction(quote=quote)])
 
     while state.execution:
-        term = state.next_term()
+        term_raw = state.next_term()
+        term = resolve_references(term_raw, state)
 
         if isinstance(term, internal):
             cast(internal, term).apply(state)
@@ -170,7 +171,6 @@ def reduce(quote: Quote) -> Sequence:
             if result is not None:
                 state.feed(result)
         else:
-            resolved = resolve_references(term, state)
-            state.feed(resolved)
+            state.feed(term)
 
     return state.data
