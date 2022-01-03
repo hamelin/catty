@@ -21,6 +21,30 @@ def unquote(state: State) -> None:
     state.push(quote)
 
 
+class _St:
+
+    def __getitem__(self, index: int) -> Extractor:
+        return Extractor(index)
+
+    def __add__(self, index: int) -> Extractor:
+        return self[index]
+
+    @property
+    def top(self) -> Extractor:
+        return self[0]
+
+    @property
+    def next(self) -> Extractor:
+        return self[1]
+
+    @property
+    def post(self) -> Extractor:
+        return self[2]
+
+
+St = _St()
+
+
 class Word(internal):
 
     def __init__(self, *quote: Any) -> None:
@@ -207,30 +231,6 @@ def callstar(f: Callable) -> internal:
         return f(*args, **kwargs)
 
     return _caller("callstar", fnc_star)
-
-
-class _St:
-
-    def __getitem__(self, index: int) -> Extractor:
-        return Extractor(index)
-
-    def __add__(self, index: int) -> Extractor:
-        return self[index]
-
-    @property
-    def top(self) -> Extractor:
-        return self[0]
-
-    @property
-    def next(self) -> Extractor:
-        return self[1]
-
-    @property
-    def post(self) -> Extractor:
-        return self[2]
-
-
-St = _St()
 
 
 def call(f: Callable, *args, **kwargs) -> internal:

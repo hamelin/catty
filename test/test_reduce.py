@@ -2,7 +2,8 @@ from operator import add, neg
 from typing import *  # noqa
 
 from catty import reduce
-from catty.words import unquote
+from catty.words import unquote, St
+from . import check_reduce
 
 
 def test_reduce_empty():
@@ -53,3 +54,41 @@ def test_unquote_unravel():
 def test_unquote_apply():
     assert reduce([8, [8, add]]) == [8, [8, add]]
     assert reduce([8, [8, add], unquote]) == [16]
+
+
+def test_reduce_resolution():
+    assert reduce([8, [7, St.top]]) == [[7, 8]]
+
+
+def test_resolve_complex():
+    assert reduce([2, 3, 4, 5, (78, (St[1], 55), {"p": 67, "q": [St + 2]})]) == [
+        2, (78, (4, 55), {"p": 67, "q": [3]})
+    ]
+
+
+def test_resolve_consume_to_deepest_reference():
+    check_reduce(
+        [23, 1, 2, 3, 4, [St.post]],
+        [23, 1, [2]]
+    )
+
+
+def test_resolve_repeat():
+    check_reduce(
+        [23, 1, 2, 3, {"a": St[1], "b": St[1], "c": St[1]}],
+        [23, 1, {"a": 2, "b": 2, "c": 2}]
+    )
+
+
+def test_resolve_equiv_index_add():
+    check_reduce(
+        [23, 1, 2, 3, [St[1], St + 1]],
+        [23, 1, [2, 2]]
+    )
+
+
+def test_resolve_equiv_literals():
+    check_reduce(
+        [23, 1, 2, 3, [St[0], St.top, St[1], St.next, St[2], St.post]],
+        [23, [3, 3, 2, 2, 1, 1]]
+    )

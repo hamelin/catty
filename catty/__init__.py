@@ -170,6 +170,7 @@ def reduce(quote: Quote) -> Sequence:
             if result is not None:
                 state.feed(result)
         else:
-            state.feed(term)
+            resolved = resolve_references_stack(term, state)
+            state.feed(resolved)
 
     return state.data
