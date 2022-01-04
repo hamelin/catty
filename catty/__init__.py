@@ -141,6 +141,10 @@ class Reference:
     def __getitem__(self, key: Any) -> "Reference":
         return Reference(self.key, self.subrefs + [Item(key)])
 
+    @property
+    def set(self) -> "Setter":
+        return Setter(self)
+
     def resolve(self, stack: Data) -> Tuple[Any, int]:
         x: Any
         if isinstance(self.key, int):
@@ -183,6 +187,37 @@ def resolve_references(c: Any, state: State) -> Any:
     if depth > 0:
         state.consume_any_n(depth)
     return resolved
+
+
+def _set(ref: Reference, how: Callable[[Any, Any], None]) -> internal:
+    @internal
+    def set_(state: State) -> None:
+        target, depth = ref.resolve(state.data)
+        if depth != 2:
+            raise TypeError(
+                "The target of the operation must be stack element at index 1; "
+                f"here, target was resolved at index {depth - 1}"
+            )
+        owner, value = state.consume_any_n(2)
+        how(target, value)
+        state.feed(owner)
+
+    return set_
+
+
+@dataclass
+class Setter:
+    _ref: Reference
+
+    def __getattr__(self, name: str) -> internal:
+        def set_attribute(target: Any, value: Any) -> None:
+            setattr(target, name, value)
+        return _set(self._ref, set_attribute)
+
+    def __getitem__(self, key: Any) -> internal:
+        def set_item(target: Any, value: Any) -> None:
+            target[key] = value
+        return _set(self._ref, set_item)
 
 
 def reduce(quote: Quote) -> Sequence:
